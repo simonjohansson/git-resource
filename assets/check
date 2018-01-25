@@ -78,11 +78,11 @@ if [ -n "$tag_filter" ]; then
     else
       git tag --list "$tag_filter" --sort=creatordate | tail -1
     fi
-  } | jq -R '.' | jq -s "map({ref: .})" >&3
+  } | jq -R '.' | jq -s "map({ref: .})" | jq '.[0] + {"simon": "heh"}' >&3
 else
   {
     set -f
     git log $ci_skip --format='%H' --first-parent $log_range $paths_search
     set +f
-  } | jq -R '.' | jq -s "map({ref: .})" >&3
+  } | jq -R '.' | jq -s "map({ref: .})" | jq '.[0] + {"simon": "heh"}' >&3
 fi
