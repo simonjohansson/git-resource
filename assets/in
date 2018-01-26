@@ -45,7 +45,7 @@ commit_verification_keys=$(jq -r '(.source.commit_verification_keys // [])[]' < 
 gpg_keyserver=$(jq -r '.source.gpg_keyserver // "hkp://ipv4.pool.sks-keyservers.net/"' < $payload)
 disable_git_lfs=$(jq -r '(.params.disable_git_lfs // false)' < $payload)
 
-cat $creds > $CREDS
+echo $creds > $CREDS
 
 echo "Checking if file exists in gcp"
 file_exist $bucket $ref $CREDS
