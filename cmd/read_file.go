@@ -14,7 +14,7 @@ func main() {
 	options := common.ParseOptions()
 
 	ctx := context.Background()
-	client, err := storage.NewClient(ctx, option.WithCredentialsFile("/tmp/creds"))
+	client, err := storage.NewClient(ctx, option.WithCredentialsFile(options.CredentialsPath))
 	if err != nil {
 		fmt.Println(err)
 		syscall.Exit(-1)
