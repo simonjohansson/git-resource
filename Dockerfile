@@ -193,14 +193,8 @@ RUN             rm -rf \
                     perl \
                     perl5
 
-FROM resource AS tests
-ADD test/ /tests
-RUN /tests/all.sh
-
-FROM resource AS integrationtests
-RUN apk --no-cache add squid
-ADD test/ /tests/test
-ADD integration-tests /tests/integration-tests
-RUN /tests/integration-tests/integration.sh
+ADD cmd/file_exists /opt
+ADD cmd/read_file /opt
+ADD cmd/write_file /opt
 
 FROM resource

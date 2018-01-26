@@ -153,3 +153,8 @@ load_git_crypt_key() {
       cat $git_crypt_tmp_key_path | tr ' ' '\n' | base64 -d > $GIT_CRYPT_KEY_PATH
   fi
 }
+
+file_exist() {
+
+    ./opt/file_exists -bucket=$1 -object=$2 -credentialsPath=$3
+}

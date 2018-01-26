@@ -19,6 +19,7 @@ fi
 PATH=/usr/local/bin:$PATH
 
 payload=$(mktemp $TMPDIR/git-resource-request.XXXXXX)
+CREDS=$(mktemp $TMPDIR/google-creds.XXXXXX)
 
 cat > $payload <&0
 
@@ -30,6 +31,8 @@ configure_https_tunnel $payload
 configure_git_ssl_verification $payload
 configure_credentials $payload
 
+creds=$(jq -r '.source.creds // ""' < $payload)
+bucket=$(jq -r '.source.bucket // ""' < $payload)
 uri=$(jq -r '.source.uri // ""' < $payload)
 branch=$(jq -r '.source.branch // ""' < $payload)
 git_config_payload=$(jq -r '.source.git_config // []' < $payload)
@@ -42,7 +45,14 @@ commit_verification_keys=$(jq -r '(.source.commit_verification_keys // [])[]' < 
 gpg_keyserver=$(jq -r '.source.gpg_keyserver // "hkp://ipv4.pool.sks-keyservers.net/"' < $payload)
 disable_git_lfs=$(jq -r '(.params.disable_git_lfs // false)' < $payload)
 
+cat $creds > $CREDS
+
+echo "Checking if file exists in gcp"
+file_exist $bucket $ref $CREDS
+
 configure_git_global "${git_config_payload}"
+
+IFS=',' read REF GENERATION <<< $ref
 
 if [ -z "$uri" ]; then
   echo "invalid payload (missing uri):" >&2
@@ -65,7 +75,7 @@ git clone --single-branch $depthflag $uri $branchflag $destination
 cd $destination
 
 git fetch origin refs/notes/*:refs/notes/*
-git checkout -q $ref
+git checkout -q $REF
 
 invalid_key() {
   echo "Invalid GPG key in: ${commit_verification_keys}"
@@ -86,7 +96,7 @@ if [ ! -z "${commit_verification_keys}" ] || [ ! -z "${commit_verification_key_i
     echo "${commit_verification_key_ids}" | \
       xargs --no-run-if-empty -n1 gpg --batch --keyserver $gpg_keyserver --recv-keys
   fi
-  git verify-commit $(git rev-list -n 1 $ref) || commit_not_signed
+  git verify-commit $(git rev-list -n 1 $REF) || commit_not_signed
 fi
 
 if [ "$disable_git_lfs" != "true" ]; then
@@ -121,10 +131,10 @@ for branch in $fetch; do
   git branch $branch FETCH_HEAD
 done
 
-if [ "$ref" == "HEAD" ]; then
+if [ "$REF" == "HEAD" ]; then
   return_ref=$(git rev-parse HEAD)
 else
-  return_ref=$ref
+  return_ref=$REF
 fi
 
 # Store committer email in .git/committer. Can be used to send email to last committer on failed build
