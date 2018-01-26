@@ -42,18 +42,19 @@ force=$(jq -r '.params.force // false' < $payload)
 only_tag=$(jq -r '.params.only_tag // false' < $payload)
 annotation_file=$(jq -r '.params.annotate // ""' < $payload)
 notes_file=$(jq -r '.params.notes // ""' < $payload)
+dir=$(jq -r '.params.dir // ""' < $payload)
 
 configure_git_global "${git_config_payload}"
 
 echo $creds > $CREDS
 
-cd $source
+cd $dir
 REF=`cat .git/ref`
 metadata=$(git_metadata)
 
 echo "Uploading to GCP"
 cd ../
-tar -cf $REF `basename $source`
+tar -cf $REF $dir
 generation=`write_file $bucket $REF $CREDS $REF`
 
 version=$REF,$generation
