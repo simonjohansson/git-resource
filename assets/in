@@ -48,7 +48,7 @@ IFS=',' read REF GENERATION <<< $ref
 
 echo $creds > $CREDS
 echo "Checking if file exists in gcp"
-ret=file_exist $bucket $REF $CREDS
+ret=`file_exist $bucket $REF $CREDS`
 if [ $ret -eq 0 ]; then
     echo "File exists in GCP"
     echo "Getting file"
