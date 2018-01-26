@@ -60,15 +60,8 @@ if [[ -z $ret ]]; then
     TMP_FILE=$(mktemp $TMPDIR/tmp_file.XXXXXX)
     get_file $bucket $REF $GENERATION $TMP_FILE $CREDS
 
-
-    echo "ls destination"
-    ls -al $destination
-
-    echo "untarring"
-    cd $destination/../
+    cd $destination/
     tar -xf $TMP_FILE
-    ls -al
-    cd $destination
 
     return_ref=$REF
 
@@ -178,10 +171,11 @@ else
     echo "${return_ref}" > .git/ref
     metadata=$(git_metadata)
 
-    echo "Uploading to GCP"
-    cd ../
-    tar -cf $REF `basename $destination`
-    generation=`write_file $bucket $REF $CREDS $REF`
+    echo "Creating tar to uploading to GCP"
+    tar -cf ../$REF .
+
+    echo "Uploading tar to GCP"
+    generation=`write_file $bucket $REF $CREDS ../$REF`
 
     version=$return_ref,$generation
 
