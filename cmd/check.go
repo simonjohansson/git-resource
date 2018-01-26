@@ -32,9 +32,12 @@ type Response struct {
 	Version  []Version      `json:"version"`
 	Metadata []MetadataPair `json:"metadata"`
 }
+
 type Version struct {
 	Ref string `json:"ref"`
 }
+
+type Versions []Version
 
 type MetadataPair struct {
 	Name  string `json:"name"`
@@ -69,25 +72,9 @@ func main() {
 	c, err := r.CommitObject(ref.Hash())
 	onError(err)
 
-	json.NewEncoder(os.Stdout).Encode(Response{
-		Version: []Version{
-			Version{
-				Ref: c.Hash.String(),
-			},
-		},
-		Metadata: []MetadataPair{
-			MetadataPair{
-				Name:  "commit",
-				Value: c.Hash.String(),
-			},
-			MetadataPair{
-				Name:  "author",
-				Value: c.Author.Name,
-			},
-			MetadataPair{
-				Name:  "message",
-				Value: c.Message,
-			},
+	json.NewEncoder(os.Stdout).Encode(Versions{
+		Version{
+			Ref: c.Hash.String(),
 		},
 	})
 }
