@@ -62,7 +62,7 @@ if [[ -z $ret ]]; then
 
     echo "untarring"
     cd $destination/../
-    tar -zxf $TMP_FILE
+    tar -xf $TMP_FILE
     cd $destination
 
     if [ "$REF" == "HEAD" ]; then
