@@ -50,9 +50,18 @@ func onError(err error) {
 
 func main() {
 
-	sourceRoot := os.Args[1]
+	sourceRoot := "/tmp/git-resource-repo-cache"
 	r, err := getRepo(sourceRoot)
 	onError(err)
+
+	 r.Fetch(&git.FetchOptions{})
+
+	w, err := r.Worktree()
+	onError(err)
+
+	w.Checkout(&git.CheckoutOptions{
+		Branch: "FETCH_HEAD",
+	})
 
 	ref, err := r.Head()
 	onError(err)
