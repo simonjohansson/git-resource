@@ -156,5 +156,5 @@ load_git_crypt_key() {
 
 file_exist() {
 
-    ./opt/file_exists -bucket=$1 -object=$2 -credentialsPath=$3
+    /opt/file_exists -bucket=$1 -object=$2 -credentialsPath=$3
 }
