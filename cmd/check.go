@@ -29,7 +29,7 @@ func getRepo(path string) (*git.Repository, error) {
 }
 
 type Response struct {
-	Version  Version        `json:"version"`
+	Version  []Version      `json:"version"`
 	Metadata []MetadataPair `json:"metadata"`
 }
 type Version struct {
@@ -54,7 +54,7 @@ func main() {
 	r, err := getRepo(sourceRoot)
 	onError(err)
 
-	 r.Fetch(&git.FetchOptions{})
+	r.Fetch(&git.FetchOptions{})
 
 	w, err := r.Worktree()
 	onError(err)
@@ -70,8 +70,10 @@ func main() {
 	onError(err)
 
 	json.NewEncoder(os.Stdout).Encode(Response{
-		Version: Version{
-			Ref: c.Hash.String(),
+		Version: []Version{
+			Version{
+				Ref: c.Hash.String(),
+			},
 		},
 		Metadata: []MetadataPair{
 			MetadataPair{
