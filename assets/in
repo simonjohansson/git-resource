@@ -48,8 +48,8 @@ IFS=',' read REF GENERATION <<< $ref
 
 echo $creds > $CREDS
 echo "Checking if file exists in gcp"
-file_exist $bucket $REF $CREDS
-if [ $? -eq 0 ]; then
+ret=file_exist $bucket $REF $CREDS
+if [ $ret -eq 0 ]; then
     echo "File exists in GCP"
     echo "Getting file"
     TMP_FILE=$(mktemp $TMPDIR/tmp_file.XXXXXX)
@@ -70,8 +70,6 @@ if [ $? -eq 0 ]; then
 else
     echo "File does not exist in GCP, cloning from git"
     configure_git_global "${git_config_payload}"
-
-
 
     if [ -z "$uri" ]; then
       echo "invalid payload (missing uri):" >&2

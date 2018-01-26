@@ -163,7 +163,7 @@ file_exist() {
 }
 
 get_file() {
-    /opt/get_file -bucket=$1 -object=$2 -credentialsPath=$3 -filePath=$4
+    /opt/read_file -bucket=$1 -object=$2 -credentialsPath=$3 -filePath=$4
 }
 
 write_file() {
