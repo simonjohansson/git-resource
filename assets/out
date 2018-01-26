@@ -48,6 +48,9 @@ configure_git_global "${git_config_payload}"
 
 echo $creds > $CREDS
 
+echo Source: $source
+cd /tmp/build/put
+
 cd $dir
 REF=`cat .git/ref`
 metadata=$(git_metadata)
