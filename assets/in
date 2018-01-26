@@ -50,6 +50,7 @@ if [[ $GENERATION -eq " " ]]; then
 fi
 
 echo "Checking if file exists in gcp"
+echo $REF#$GENERATION
 ret=$(file_exist $bucket $REF $GENERATION $CREDS)
 if [[ -z $ret ]]; then
     echo "File exists in GCP"
@@ -63,11 +64,7 @@ if [[ -z $ret ]]; then
     tar -xf $TMP_FILE
     cd $destination
 
-    if [ "$REF" == "HEAD" ]; then
-      return_ref=$(git rev-parse HEAD)
-    else
-      return_ref=$REF
-    fi
+    return_ref=$REF
 
     if [[ -z GENERATION ]]; then
         return_ref=$return_ref,$GENERATION
