@@ -196,6 +196,6 @@ RUN             rm -rf \
 ADD cmd/file_exists /opt
 ADD cmd/read_file /opt
 ADD cmd/write_file /opt
-ADD cmd/check /opt
+ADD cmd/check /opt/resource/
 
 FROM resource
