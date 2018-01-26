@@ -53,15 +53,21 @@ echo "Checking if file exists in gcp"
 echo $REF#$GENERATION
 ret=$(file_exist $bucket $REF $GENERATION $CREDS)
 if [[ -z $ret ]]; then
+    set -x
     echo "File exists in GCP"
     echo "Getting file"
 
     TMP_FILE=$(mktemp $TMPDIR/tmp_file.XXXXXX)
     get_file $bucket $REF $GENERATION $TMP_FILE $CREDS
 
+
+    echo "ls destination"
+    ls -al $destination
+
     echo "untarring"
     cd $destination/../
     tar -xf $TMP_FILE
+    ls -al
     cd $destination
 
     return_ref=$REF
