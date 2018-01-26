@@ -174,5 +174,4 @@ else
       version: {ref: $(echo $return_ref | jq -R .)},
       metadata: $(metadata)
     }" >&3
-
 fi

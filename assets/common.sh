@@ -159,7 +159,7 @@ file_exist() {
     /opt/file_exists -bucket=$1 -object=$2 -credentialsPath=$3
     RET=$?
     set -e
-    $RET
+    echo $RET
 }
 
 get_file() {
