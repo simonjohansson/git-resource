@@ -14,17 +14,18 @@ func main() {
 	options := common.ParseOptions()
 
 	ctx := context.Background()
-	client, err := storage.NewClient(ctx, option.WithCredentialsFile("/tmp/creds"))
+	client, err := storage.NewClient(ctx, option.WithCredentialsFile(options.CredentialsPath))
 	if err != nil {
 		fmt.Println(err)
 		syscall.Exit(-1)
 	}
 
-	obj := options.ConstructObject(client)
+	bucket := client.Bucket(options.Bucket)
+	obj := bucket.Object(options.Object)
 	wr := obj.NewWriter(ctx)
 	defer wr.Close()
 
-	b, err := ioutil.ReadFile(options.FilePath) // just pass the file name
+	b, err := ioutil.ReadFile(options.FilePath)
 	if err != nil {
 		fmt.Print(err)
 		syscall.Exit(-1)
@@ -35,7 +36,12 @@ func main() {
 		fmt.Println(err)
 		syscall.Exit(-1)
 	}
+	wr.Close()
 
-	attr, _ := obj.Attrs(ctx)
+	attr, err := obj.Attrs(ctx)
+	if err != nil {
+		fmt.Print(err)
+		syscall.Exit(-1)
+	}
 	fmt.Println(attr.Generation)
 }
