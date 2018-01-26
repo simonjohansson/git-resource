@@ -155,6 +155,17 @@ load_git_crypt_key() {
 }
 
 file_exist() {
-
+    set +e
     /opt/file_exists -bucket=$1 -object=$2 -credentialsPath=$3
+    RET=$?
+    set -e
+    $RET
+}
+
+get_file() {
+    /opt/get_file -bucket=$1 -object=$2 -credentialsPath=$3 -filePath=$4
+}
+
+write_file() {
+    /opt/write_file -bucket=$1 -object=$2 -credentialsPath=$3 -filePath=$4
 }

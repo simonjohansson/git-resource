@@ -44,108 +44,135 @@ commit_verification_key_ids=$(jq -r '(.source.commit_verification_key_ids // [])
 commit_verification_keys=$(jq -r '(.source.commit_verification_keys // [])[]' < $payload)
 gpg_keyserver=$(jq -r '.source.gpg_keyserver // "hkp://ipv4.pool.sks-keyservers.net/"' < $payload)
 disable_git_lfs=$(jq -r '(.params.disable_git_lfs // false)' < $payload)
-
-echo $creds > $CREDS
-
-echo "Checking if file exists in gcp"
-file_exist $bucket $ref $CREDS
-
-configure_git_global "${git_config_payload}"
-
 IFS=',' read REF GENERATION <<< $ref
 
-if [ -z "$uri" ]; then
-  echo "invalid payload (missing uri):" >&2
-  cat $payload >&2
-  exit 1
-fi
+echo $creds > $CREDS
+echo "Checking if file exists in gcp"
+file_exist $bucket $REF $CREDS
+if [ $? -eq 0 ]; then
+    echo "File exists in GCP"
+    echo "Getting file"
+    TMP_FILE=$(mktemp $TMPDIR/tmp_file.XXXXXX)
+    get_file $bucket $REF $CREDS $TMP_FILE
 
-branchflag=""
-if [ -n "$branch" ]; then
-  branchflag="--branch $branch"
-fi
+    tar -zxf $TMP_FILE $destination
+    cd $destination
 
-depthflag=""
-if test "$depth" -gt 0 2> /dev/null; then
-  depthflag="--depth $depth"
-fi
-
-git clone --single-branch $depthflag $uri $branchflag $destination
-
-cd $destination
-
-git fetch origin refs/notes/*:refs/notes/*
-git checkout -q $REF
-
-invalid_key() {
-  echo "Invalid GPG key in: ${commit_verification_keys}"
-  exit 2
-}
-
-commit_not_signed() {
-  commit_id=$(git rev-parse ${ref})
-  echo "The commit ${commit_id} is not signed"
-  exit 1
-}
-
-if [ ! -z "${commit_verification_keys}" ] || [ ! -z "${commit_verification_key_ids}" ] ; then
-  if [ ! -z "${commit_verification_keys}" ]; then
-    echo "${commit_verification_keys}" | gpg --batch --import || invalid_key "${commit_verification_keys}"
-  fi
-  if [ ! -z "${commit_verification_key_ids}" ]; then
-    echo "${commit_verification_key_ids}" | \
-      xargs --no-run-if-empty -n1 gpg --batch --keyserver $gpg_keyserver --recv-keys
-  fi
-  git verify-commit $(git rev-list -n 1 $REF) || commit_not_signed
-fi
-
-if [ "$disable_git_lfs" != "true" ]; then
-  git lfs fetch
-  git lfs checkout
-fi
-
-git log -1 --oneline
-git clean --force --force -d
-git submodule sync
-
-if [ -f $GIT_CRYPT_KEY_PATH ]; then
-  echo "unlocking git repo"
-  git crypt unlock $GIT_CRYPT_KEY_PATH
-fi
-
-if [ "$submodules" == "all" ]; then
-  git submodule update --init  $depthflag --recursive
-elif [ "$submodules" != "none" ]; then
-  submodules=$(echo $submodules | jq -r '(.[])')
-  for submodule in $submodules; do
-    git submodule update --init $depthflag --recursive $submodule
-  done
-fi
-
-if [ "$disable_git_lfs" != "true" ]; then
-  git submodule foreach "git lfs fetch && git lfs checkout"
-fi
-
-for branch in $fetch; do
-  git fetch origin $branch
-  git branch $branch FETCH_HEAD
-done
-
-if [ "$REF" == "HEAD" ]; then
-  return_ref=$(git rev-parse HEAD)
+    if [ "$REF" == "HEAD" ]; then
+      return_ref=$(git rev-parse HEAD)
+    else
+      return_ref=$REF
+    fi
+    jq -n "{
+        version: {ref: $(echo $return_ref | jq -R .)},
+        metadata: $(git_metadata)
+    }" >&3
 else
-  return_ref=$REF
+    echo "File does not exist in GCP, cloning from git"
+    configure_git_global "${git_config_payload}"
+
+
+
+    if [ -z "$uri" ]; then
+      echo "invalid payload (missing uri):" >&2
+      cat $payload >&2
+      exit 1
+    fi
+
+    branchflag=""
+    if [ -n "$branch" ]; then
+      branchflag="--branch $branch"
+    fi
+
+    depthflag=""
+    if test "$depth" -gt 0 2> /dev/null; then
+      depthflag="--depth $depth"
+    fi
+
+    git clone --single-branch $depthflag $uri $branchflag $destination
+
+    cd $destination
+
+    git fetch origin refs/notes/*:refs/notes/*
+    git checkout -q $REF
+
+    invalid_key() {
+      echo "Invalid GPG key in: ${commit_verification_keys}"
+      exit 2
+    }
+
+    commit_not_signed() {
+      commit_id=$(git rev-parse ${ref})
+      echo "The commit ${commit_id} is not signed"
+      exit 1
+    }
+
+    if [ ! -z "${commit_verification_keys}" ] || [ ! -z "${commit_verification_key_ids}" ] ; then
+      if [ ! -z "${commit_verification_keys}" ]; then
+        echo "${commit_verification_keys}" | gpg --batch --import || invalid_key "${commit_verification_keys}"
+      fi
+      if [ ! -z "${commit_verification_key_ids}" ]; then
+        echo "${commit_verification_key_ids}" | \
+          xargs --no-run-if-empty -n1 gpg --batch --keyserver $gpg_keyserver --recv-keys
+      fi
+      git verify-commit $(git rev-list -n 1 $REF) || commit_not_signed
+    fi
+
+    if [ "$disable_git_lfs" != "true" ]; then
+      git lfs fetch
+      git lfs checkout
+    fi
+
+    git log -1 --oneline
+    git clean --force --force -d
+    git submodule sync
+
+    if [ -f $GIT_CRYPT_KEY_PATH ]; then
+      echo "unlocking git repo"
+      git crypt unlock $GIT_CRYPT_KEY_PATH
+    fi
+
+    if [ "$submodules" == "all" ]; then
+      git submodule update --init  $depthflag --recursive
+    elif [ "$submodules" != "none" ]; then
+      submodules=$(echo $submodules | jq -r '(.[])')
+      for submodule in $submodules; do
+        git submodule update --init $depthflag --recursive $submodule
+      done
+    fi
+
+    if [ "$disable_git_lfs" != "true" ]; then
+      git submodule foreach "git lfs fetch && git lfs checkout"
+    fi
+
+    for branch in $fetch; do
+      git fetch origin $branch
+      git branch $branch FETCH_HEAD
+    done
+
+    if [ "$REF" == "HEAD" ]; then
+      return_ref=$(git rev-parse HEAD)
+    else
+      return_ref=$REF
+    fi
+
+    # Store committer email in .git/committer. Can be used to send email to last committer on failed build
+    # Using https://github.com/mdomke/concourse-email-resource for example
+    git --no-pager log -1 --pretty=format:"%ae" > .git/committer
+
+    # Store git-resource returned version ref .git/ref. Useful to know concourse
+    # pulled ref in following tasks and resources.
+    echo "${return_ref}" > .git/ref
+    metadata=$(git_metadata)
+
+    echo "Uploading to GCP"
+    cd ../
+    tar -cf $REF $destination
+    write_file $bucket $REF $CREDS $REF
+
+    jq -n "{
+      version: {ref: $(echo $return_ref | jq -R .)},
+      metadata: $(metadata)
+    }" >&3
+
 fi
-
-# Store committer email in .git/committer. Can be used to send email to last committer on failed build
-# Using https://github.com/mdomke/concourse-email-resource for example
-git --no-pager log -1 --pretty=format:"%ae" > .git/committer
-
-# Store git-resource returned version ref .git/ref. Useful to know concourse
-# pulled ref in following tasks and resources.
-echo "${return_ref}" > .git/ref
-
-jq -n "{
-  version: {ref: $(echo $return_ref | jq -R .)},
-  metadata: $(git_metadata)
-}" >&3
